@@ -13,7 +13,7 @@ const DashboardPage = () => {
 
   if (isLoading || !data) {
     return (
-      <div className="ml-8 space-y-6 p-6">
+      <div className="space-y-6 p-6">
         <h2 className="text-2xl font-bold">Dashboard</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-[250px] w-full rounded-xl bg-gray-200" />
@@ -25,7 +25,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="ml-8 space-y-6 p-6">
+    <div className="space-y-6 p-6">
       <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
         Dashboard
       </h3>
