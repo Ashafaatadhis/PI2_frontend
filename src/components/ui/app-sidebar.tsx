@@ -2,18 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Home,
-  Inbox,
-  LogOut,
-  Search,
-  Settings,
-  User,
-  User2,
-} from "lucide-react";
+import { Calendar, ChevronUp, Home, Inbox, LogOut, Search } from "lucide-react";
 
 import {
   Sidebar,
@@ -35,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 
 // Menu items.
@@ -68,7 +57,7 @@ export function AppSidebar({ session }: { session: Session | null }) {
   const user = session?.user;
 
   const handleLogout = () => {
-    signOut({ redirectTo: "/" }); // otomatis redirect ke halaman login (atau bisa atur callback)
+    void signOut({ redirectTo: "/" }); // otomatis redirect ke halaman login (atau bisa atur callback)
   };
 
   const getInitials = (name: string) =>

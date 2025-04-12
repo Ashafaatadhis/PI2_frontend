@@ -3,7 +3,7 @@
 
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 
 import { api } from "@/trpc/react";
 import { Card, CardContent } from "@/components/ui/card";

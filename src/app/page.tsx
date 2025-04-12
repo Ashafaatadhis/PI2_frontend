@@ -1,5 +1,5 @@
 import { auth } from "@/server/auth";
-import { api, HydrateClient } from "@/trpc/server";
+import { HydrateClient } from "@/trpc/server";
 
 import { Navbar } from "./_components/navbar";
 import { Hero } from "./_components/hero";

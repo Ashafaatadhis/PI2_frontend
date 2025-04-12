@@ -26,22 +26,25 @@ export default function StressForm() {
   const mutation = api.stress.predictAndSave.useMutation();
   const { data: status, refetch } = api.stress.checkToday.useQuery();
 
-  const onSubmit = (data: StressFormValues) => {
-    mutation.mutate(data, {
-      onSuccess: () => {
-        toast.success("Prediksi berhasil!");
-        reset(); // reset form setelah submit
-        refetch();
-      },
-      onError: (err) => {
-        toast.error(err.message);
-      },
-    });
+  const onSubmit = async (data: StressFormValues) => {
+    try {
+      await mutation.mutateAsync(data);
+      toast.success("Prediksi berhasil!");
+      reset(); // ini sync
+      void refetch(); // ini async, tapi gak perlu nungguin
+    } catch (err: unknown) {
+      if (err instanceof Error) toast.error(err.message);
+      else toast.error("Terjadi kesalahan yang tidak diketahui.");
+    }
   };
-
   return (
     <Card className="w-full max-w-full rounded-xl p-6 shadow-md">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit((data) => {
+          void onSubmit(data);
+        })}
+        className="space-y-6"
+      >
         {status?.hasSubmitted && (
           <p className="text-center text-sm font-medium text-yellow-600">
             Kamu sudah mengisi data hari ini. Coba lagi besok ya! ✨

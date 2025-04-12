@@ -2,13 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle,
-  Clipboard,
-  Smile,
-} from "lucide-react";
+import { CheckCircle, Clipboard } from "lucide-react";
 import { api } from "@/trpc/react";
 import Link from "next/link";
 

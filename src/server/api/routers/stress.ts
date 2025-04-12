@@ -5,6 +5,11 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { StresLevel } from "@prisma/client";
 import { env } from "@/env";
 
+type PredictionResponse = {
+  tingkat_stres: number;
+  confidence: [number, number, number];
+};
+
 export const stressRouter = createTRPCRouter({
   getHistory: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db.prediksiStres.findMany({
@@ -164,7 +169,7 @@ export const stressRouter = createTRPCRouter({
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as PredictionResponse;
 
       const prediksiLevel: StresLevel =
         result.tingkat_stres === 0

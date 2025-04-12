@@ -36,7 +36,7 @@ export const TestimonialSection = () => {
         {testimonials.map((testimonial, index) => (
           <SwiperSlide key={index}>
             <blockquote className="text-xl text-gray-700 italic">
-              "{testimonial.quote}"
+              &quot;{testimonial.quote}&quot;
             </blockquote>
             <p className="mt-4 text-gray-500">
               — {testimonial.name}, {testimonial.position}

@@ -1,7 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
