@@ -233,7 +233,7 @@ export const stressRouter = createTRPCRouter({
       await ctx.db.streak.create({
         data: {
           userId,
-          tanggal: today,
+          tanggal: now,
         },
       });
 
