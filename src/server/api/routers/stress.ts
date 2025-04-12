@@ -103,7 +103,6 @@ export const stressRouter = createTRPCRouter({
   checkToday: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     // Cari aktivitas untuk hari ini beserta level emosi
     const existing = await ctx.db.dailyActivity.findFirst({
@@ -140,7 +139,6 @@ export const stressRouter = createTRPCRouter({
 
       // Cek apakah sudah isi hari ini
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
 
       const existing = await ctx.db.dailyActivity.findFirst({
         where: {
