@@ -187,7 +187,7 @@ export const stressRouter = createTRPCRouter({
       const activity = await ctx.db.dailyActivity.create({
         data: {
           userId,
-          tanggal: today,
+          tanggal: now,
           jamTidur: input.sleepHours,
           screenTime: input.screenTime,
           waktuOlahraga: input.exerciseTime,
