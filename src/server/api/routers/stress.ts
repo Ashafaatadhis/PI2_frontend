@@ -103,9 +103,11 @@ export const stressRouter = createTRPCRouter({
   checkToday: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 2025-04-12 00:00:00
+    const today = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
     const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1); // 2025-04-13 00:00:00
+    tomorrow.setUTCDate(today.getUTCDate() + 1);
 
     // Cari aktivitas untuk hari ini beserta level emosi
     const existing = await ctx.db.dailyActivity.findFirst({
@@ -143,9 +145,11 @@ export const stressRouter = createTRPCRouter({
 
       // Cek apakah sudah isi hari ini
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 2025-04-12 00:00:00
+      const today = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
       const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1); // 2025-04-13 00:00:00
+      tomorrow.setUTCDate(today.getUTCDate() + 1);
 
       const existing = await ctx.db.dailyActivity.findFirst({
         where: {

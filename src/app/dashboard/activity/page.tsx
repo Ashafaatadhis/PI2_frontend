@@ -13,7 +13,7 @@ const ActivityPage = () => {
     api.stress.getHistory.useQuery();
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="ml-8 space-y-6 p-6">
       <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
         Aktivitas Harian
       </h3>
