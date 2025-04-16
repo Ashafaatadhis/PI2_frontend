@@ -1,5 +1,5 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { startOfDay } from "date-fns";
+
 import { DateTime } from "luxon";
 
 export const streakRouter = createTRPCRouter({
