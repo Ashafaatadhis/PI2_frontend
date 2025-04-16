@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { subDays, format } from "date-fns";
 
+import { DateTime } from "luxon";
+
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { StresLevel } from "@prisma/client";
 import { env } from "@/env";
@@ -24,9 +26,21 @@ export const stressRouter = createTRPCRouter({
   getSummary: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
-    const fromDate = subDays(new Date(), 6); // 7 hari ke belakang
+    // Ambil timezone user
+    const user = await ctx.db.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
+    const timezone = user.timezone;
 
-    // Prediksi Stres
+    // Hitung 7 hari terakhir berdasarkan zona waktu user
+    const fromDate = DateTime.now()
+      .setZone(timezone)
+      .minus({ days: 6 })
+      .startOf("day")
+      .toJSDate();
+
+    // --- Prediksi Stres ---
     const stresRaw = await ctx.db.prediksiStres.findMany({
       where: {
         userId,
@@ -46,18 +60,19 @@ export const stressRouter = createTRPCRouter({
       },
     });
 
-    const stress = stresRaw.map(
-      (item: {
-        dailyActivity: { tanggal: string | number | Date };
-        prediksi: string;
-      }) => ({
-        day: format(item.dailyActivity.tanggal, "EEE"), // Misalnya: Mon
+    const stress = stresRaw.map((item) => {
+      const day = DateTime.fromJSDate(item.dailyActivity.tanggal)
+        .setZone(timezone)
+        .toFormat("EEE"); // e.g., Mon
+
+      return {
+        day,
         stress:
           item.prediksi === "Rendah" ? 1 : item.prediksi === "Sedang" ? 2 : 3,
-      }),
-    );
+      };
+    });
 
-    // Aktivitas Harian
+    // --- Aktivitas Harian ---
     const activityRaw = await ctx.db.dailyActivity.findMany({
       where: {
         userId,
@@ -71,12 +86,12 @@ export const stressRouter = createTRPCRouter({
     });
 
     const activity = activityRaw.map((item) => ({
-      day: format(item.tanggal, "EEE"),
+      day: DateTime.fromJSDate(item.tanggal).setZone(timezone).toFormat("EEE"),
       sleep: item.jamTidur,
       screen: item.screenTime,
     }));
 
-    // Streak (misalnya hitung dari tanggal-tanggal streak)
+    // --- Streak ---
     const streakRaw = await ctx.db.streak.findMany({
       where: {
         userId,
@@ -90,8 +105,8 @@ export const stressRouter = createTRPCRouter({
     });
 
     const streak = streakRaw.map((item, index) => ({
-      day: format(item.tanggal, "EEE"),
-      streak: index + 1, // atau kamu bisa hitung streak dari logic backend
+      day: DateTime.fromJSDate(item.tanggal).setZone(timezone).toFormat("EEE"),
+      streak: index + 1,
     }));
 
     return {
@@ -102,31 +117,50 @@ export const stressRouter = createTRPCRouter({
   }),
   checkToday: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    const now = new Date();
-    const today = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(today.getUTCDate() + 1);
 
-    // Cari aktivitas untuk hari ini beserta level emosi
+    // Ambil timezone dari user
+    const user = await ctx.db.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
+    const timezone = user.timezone;
+
+    // Hitung awal dan akhir hari ini berdasarkan timezone user
+    const startOfToday = DateTime.now().setZone(timezone).startOf("day");
+    const endOfToday = startOfToday.plus({ days: 1 });
+
+    const startOfTodayUTC = startOfToday.toUTC().toJSDate();
+    const endOfTodayUTC = endOfToday.toUTC().toJSDate();
+
+    console.log("Waktu Cek:", {
+      lokal: {
+        start: startOfToday.toISO(),
+        end: endOfToday.toISO(),
+      },
+      UTC: {
+        start: startOfTodayUTC.toISOString(),
+        end: endOfTodayUTC.toISOString(),
+      },
+    });
+
+    // Cari aktivitas hari ini berdasarkan waktu UTC yang dikonversi dari zona waktu user
     const existing = await ctx.db.dailyActivity.findFirst({
       where: {
         userId,
         tanggal: {
-          gte: today, // mulai dari jam 00:00 hari ini
-          lt: tomorrow, // sebelum jam 00:00 besok
+          gte: startOfTodayUTC,
+          lt: endOfTodayUTC,
         },
       },
       select: {
-        prediksiStres: true, // Ambil level emosi dari prediksi
-        tanggal: true, // Ambil tanggal untuk konfirmasi
+        prediksiStres: true,
+        tanggal: true,
       },
     });
 
     return {
       hasSubmitted: !!existing,
-      level: existing ? existing.prediksiStres : null, // Mengembalikan level, jika ada
+      level: existing ? existing.prediksiStres : null,
     };
   }),
 
@@ -143,20 +177,28 @@ export const stressRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      // Cek apakah sudah isi hari ini
-      const now = new Date();
-      const today = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-      );
-      const tomorrow = new Date(today);
-      tomorrow.setUTCDate(today.getUTCDate() + 1);
+      // Ambil timezone user dari database
+      const user = await ctx.db.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
 
+      const timezone = user.timezone;
+
+      // Dapatkan awal & akhir hari ini sesuai timezone user
+      const todayStart = DateTime.now()
+        .setZone(timezone)
+        .startOf("day")
+        .toJSDate();
+      const todayEnd = DateTime.now().setZone(timezone).endOf("day").toJSDate();
+
+      // Cek apakah user sudah mengisi hari ini
       const existing = await ctx.db.dailyActivity.findFirst({
         where: {
           userId,
           tanggal: {
-            gte: today, // mulai dari jam 00:00 hari ini
-            lt: tomorrow, // sebelum jam 00:00 besok
+            gte: todayStart,
+            lte: todayEnd,
           },
         },
       });
@@ -191,12 +233,12 @@ export const stressRouter = createTRPCRouter({
       const activity = await ctx.db.dailyActivity.create({
         data: {
           userId,
-          tanggal: now,
           jamTidur: input.sleepHours,
           screenTime: input.screenTime,
           waktuOlahraga: input.exerciseTime,
           waktuBelajar: input.studyHours,
           jumlahTugas: input.assignmentCount,
+          tanggal: new Date(), // Atau pakai DateTime.now().setZone(timezone).toJSDate() jika mau konsisten
         },
       });
 
@@ -212,16 +254,25 @@ export const stressRouter = createTRPCRouter({
         },
       });
 
-      // Cek streak kemarin
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
+      // Dapatkan awal & akhir hari kemarin sesuai timezone user
+      const yesterdayStart = DateTime.now()
+        .setZone(timezone)
+        .minus({ days: 1 })
+        .startOf("day")
+        .toJSDate();
+
+      const yesterdayEnd = DateTime.now()
+        .setZone(timezone)
+        .minus({ days: 1 })
+        .endOf("day")
+        .toJSDate();
 
       const yesterdayStreak = await ctx.db.streak.findFirst({
         where: {
           userId,
           tanggal: {
-            gte: yesterday,
-            lt: new Date(yesterday.getTime() + 24 * 60 * 60 * 1000),
+            gte: yesterdayStart,
+            lte: yesterdayEnd,
           },
         },
       });
@@ -237,7 +288,7 @@ export const stressRouter = createTRPCRouter({
       await ctx.db.streak.create({
         data: {
           userId,
-          tanggal: now,
+          tanggal: new Date(), // Bisa disesuaikan juga dengan timezone
         },
       });
 

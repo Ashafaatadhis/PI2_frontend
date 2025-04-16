@@ -47,6 +47,8 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  timezone      String?
+
   accounts      Account[]
   sessions      Session[]
  
@@ -71,7 +73,7 @@ model VerificationToken {
 model DailyActivity {
   id              Int      @id @default(autoincrement())
   userId          String
-  tanggal         DateTime
+  tanggal         DateTime @default(now()) @db.Timestamptz()
   jamTidur        Float
   screenTime      Float
   waktuOlahraga   Float
@@ -121,7 +123,7 @@ model PrediksiStres {
 model Streak {
   id              Int      @id @default(autoincrement())
   userId          String
-  tanggal         DateTime
+  tanggal         DateTime @default(now()) @db.Timestamptz()
 
   user            User     @relation(fields: [userId], references: [id])
 }

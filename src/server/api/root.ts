@@ -1,6 +1,7 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { stressRouter } from "./routers/stress";
 import { streakRouter } from "./routers/streak";
+import { userRouter } from "./routers/user";
 
 /**
  * This is the primary router for your server.
@@ -10,6 +11,7 @@ import { streakRouter } from "./routers/streak";
 export const appRouter = createTRPCRouter({
   stress: stressRouter,
   streak: streakRouter,
+  user: userRouter,
 });
 
 // export type definition of API
