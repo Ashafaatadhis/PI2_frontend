@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { subDays, format } from "date-fns";
 
 import { DateTime } from "luxon";
 
@@ -30,8 +29,9 @@ export const stressRouter = createTRPCRouter({
     const user = await ctx.db.user.findUnique({
       where: { id: userId },
     });
-    if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
-    const timezone = user.timezone;
+
+    const timezone = user?.timezone;
+    if (!timezone) throw new Error("Timezone tidak ditemukan.");
 
     // Hitung 7 hari terakhir berdasarkan zona waktu user
     const fromDate = DateTime.now()
@@ -122,8 +122,9 @@ export const stressRouter = createTRPCRouter({
     const user = await ctx.db.user.findUnique({
       where: { id: userId },
     });
-    if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
-    const timezone = user.timezone;
+
+    const timezone = user?.timezone;
+    if (!timezone) throw new Error("Timezone tidak ditemukan.");
 
     // Hitung awal dan akhir hari ini berdasarkan timezone user
     const startOfToday = DateTime.now().setZone(timezone).startOf("day");
@@ -181,9 +182,9 @@ export const stressRouter = createTRPCRouter({
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
       });
-      if (!user || !user.timezone) throw new Error("Timezone tidak ditemukan.");
 
-      const timezone = user.timezone;
+      const timezone = user?.timezone;
+      if (!timezone) throw new Error("Timezone tidak ditemukan.");
 
       // Dapatkan awal & akhir hari ini sesuai timezone user
       const todayStart = DateTime.now()

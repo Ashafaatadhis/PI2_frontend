@@ -1,29 +1,45 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { startOfDay } from "date-fns";
+import { DateTime } from "luxon";
 
 export const streakRouter = createTRPCRouter({
   getCurrent: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
+
+    const user = await ctx.db.user.findUnique({ where: { id: userId } });
+    if (!user?.timezone) throw new Error("Timezone tidak ditemukan.");
+
+    const timezone = user.timezone;
 
     const allStreaks = await ctx.db.streak.findMany({
       where: { userId },
       orderBy: { tanggal: "asc" },
     });
 
-    const today = startOfDay(new Date());
-    const filledToday = allStreaks.some(
-      (s) => startOfDay(new Date(s.tanggal)).getTime() === today.getTime(),
-    );
+    const today = DateTime.now().setZone(timezone).startOf("day");
+
+    const filledToday = allStreaks.some((s) => {
+      const tanggal = DateTime.fromJSDate(new Date(s.tanggal))
+        .setZone(timezone)
+        .startOf("day");
+      return tanggal.equals(today);
+    });
 
     const count = allStreaks.length;
 
     const recent = allStreaks
       .filter((s) => {
-        const date = new Date(s.tanggal);
-        const diff = today.getTime() - startOfDay(date).getTime();
-        return diff <= 6 * 86400000;
+        const tanggal = DateTime.fromJSDate(new Date(s.tanggal))
+          .setZone(timezone)
+          .startOf("day");
+        const diff = today.diff(tanggal, "days").days;
+        return diff >= 0 && diff <= 6;
       })
-      .map((s) => new Date(s.tanggal).getDay());
+      .map(
+        (s) =>
+          DateTime.fromJSDate(new Date(s.tanggal)).setZone(timezone).weekday %
+          7, // Senin = 1, Minggu = 7 → % 7 biar Minggu = 0
+      );
 
     return {
       count,
