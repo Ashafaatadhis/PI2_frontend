@@ -57,7 +57,11 @@ export function AppSidebar({ session }: { session: Session | null }) {
   const user = session?.user;
 
   const handleLogout = () => {
-    void signOut({ redirectTo: "/" }); // otomatis redirect ke halaman login (atau bisa atur callback)
+    // Hapus timezone dari localStorage saat logout
+    localStorage.removeItem("user_tz");
+
+    // Melakukan proses logout dan redirect ke halaman login
+    void signOut({ redirectTo: "/" });
   };
 
   const getInitials = (name: string) =>
